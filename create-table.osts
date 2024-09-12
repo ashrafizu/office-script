@@ -1,0 +1,63 @@
+// THIS IS A SAMPLE OF HOW YOU CAN CREATE A TABLE BASED ON THE USED RANGE IN YOUR WORKING SHEET
+// BUT YOU HAVE TO DECLARE WHERE THE RANGE STARTS FROM AS THE COLUMN HEADERS CAN BE NOT STARTING FROM "A1"
+
+function convertToA1Notation(row: number, col: number): string {
+  let letter = '';
+  let col_index = col;
+  // Convert column index into letters
+  while (col_index > 0) {
+    let mod = (col_index - 1) % 26;        
+    letter = String.fromCharCode(65 + mod) + letter;
+    col_index = Math.floor((col_index - 1) / 26);
+    };
+  return letter + row;
+  };
+  
+function main(workbook: ExcelScript.Workbook) {
+  // Get File Name
+  let fileName = workbook.getName();
+  // console.log(fileName);
+  // Get the worksheet
+  let sheet = workbook.getActiveWorksheet();
+
+  function tableStartAt(A1Notation: string, tableName: string) {
+    let lastRow = sheet.getUsedRange().getLastRow();
+    let lastColumn = sheet.getUsedRange().getLastColumn();
+    // Convert to A1 notation
+    let cellAddress = convertToA1Notation(lastRow.getRowIndex() + 1, lastColumn.getColumnIndex() + 1);
+    let tableRange = sheet.getRange(`${A1Notation}:${cellAddress}`);
+    let table = sheet.addTable(tableRange, true /*to HasHeaders*/);
+    table.setName(tableName);
+  }
+
+  function removeLastRow(table_name: string) {
+    let lastRow = sheet.getTable(table_name).getRangeBetweenHeaderAndTotal().getRowCount();
+    console.log(Number(lastRow));
+    sheet.getTable(table_name).deleteRowsAt(lastRow,1);
+  }
+  
+  // For Collection Report - assuming the table start at range "A5" 
+  // while OB Sales Summary (also a collection data) - table start at range "A2"
+  if (fileName.includes('Collection')) {
+    tableStartAt('A5','Collection');
+  } else if (fileName.includes('OB Sales')) {
+    tableStartAt('A2','Collection');
+    removeLastRow('Collection');
+  };
+
+  // For Listing Report - variety of table ranges
+  if (fileName.includes('Listing')) {
+    let checkCampaign = sheet.getRange('E8').getValue().toString().toUpperCase();
+    if (checkCampaign.includes('SENHENG')) {
+      tableStartAt('A5','Listing');
+    } else if (checkCampaign.includes('AUTO')) {
+      tableStartAt('A5','Listing')
+    } else if (fileName.includes('OB')) {
+      tableStartAt('A3', 'Listing');
+      removeLastRow('Listing');
+    } else {
+      tableStartAt('A6','Listing');
+    };
+  };
+
+};
